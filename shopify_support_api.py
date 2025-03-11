@@ -5,10 +5,10 @@ import openai
 
 app = Flask(__name__)
 
-# Shopify API Credentials (aus Umgebungsvariablen)
+# Shopify API Credentials (from environment variables)
 SHOPIFY_STORE = "e23hvj-5j.myshopify.com"
-SHOPIFY_ACCESS_TOKEN = os.getenv("SHOPIFY_API_KEY")  # Sicher aus Umgebungsvariablen
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")  # Sicher aus Umgebungsvariablen
+SHOPIFY_ACCESS_TOKEN = os.getenv("SHOPIFY_API_KEY")  # Secure from environment
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")  # Secure from environment
 
 HEADERS = {
     "X-Shopify-Access-Token": SHOPIFY_ACCESS_TOKEN
@@ -21,10 +21,10 @@ def get_order_info(order_id=None, customer_name=None):
     url = f"https://{SHOPIFY_STORE}/admin/api/2023-04/orders.json"
 
     params = {}
-if order_id:
-    params["name"] = f"#{order_id}"  # Sucht nach der Bestellnummer (nicht der internen ID)
-elif customer_name:
-    params["customer"] = customer_name
+    if order_id:
+        params["name"] = f"#{order_id}"  # Search by order number (not internal ID)
+    elif customer_name:
+        params["customer"] = customer_name
 
     response = requests.get(url, headers=HEADERS, params=params)
 
@@ -36,7 +36,7 @@ elif customer_name:
         order_data = orders[0]
         tracking_number = extract_tracking_number(order_data)
         
-        # Falls eine Tracking-Nummer existiert, Status abrufen
+        # Retrieve tracking info if tracking number exists
         tracking_info = get_tracking_info(tracking_number) if tracking_number else "No tracking number available."
         
         order_data["tracking_info"] = tracking_info
