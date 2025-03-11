@@ -6,7 +6,7 @@ import openai
 app = Flask(__name__)
 
 # Shopify API Credentials (aus Umgebungsvariablen)
-SHOPIFY_STORE = "e23hvj-5j.myshopify.com/admin/api/2023-04/orders.json"
+SHOPIFY_STORE = "e23hvj-5j.myshopify.com"
 SHOPIFY_ACCESS_TOKEN = os.getenv("SHOPIFY_API_KEY")  # Sicher aus Umgebungsvariablen
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")  # Sicher aus Umgebungsvariablen
 
