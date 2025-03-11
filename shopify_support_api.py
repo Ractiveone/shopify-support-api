@@ -6,7 +6,7 @@ import openai
 app = Flask(__name__)
 
 # Shopify API Credentials (aus Umgebungsvariablen)
-SHOPIFY_STORE = "www.ractiveone.com"
+SHOPIFY_STORE = "https://ractiveone.myshopify.com/admin/api/2023-04/orders.json"
 SHOPIFY_ACCESS_TOKEN = os.getenv("SHOPIFY_API_KEY")  # Sicher aus Umgebungsvariablen
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")  # Sicher aus Umgebungsvariablen
 
