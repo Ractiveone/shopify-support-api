@@ -3,6 +3,7 @@ import requests
 import openai
 
 app = Flask(__name__)
+
 # Shopify API credentials
 SHOPIFY_STORE = "www.ractiveone.com"
 API_KEY = "b756755fd0290c14bacad6d371d9081f"
