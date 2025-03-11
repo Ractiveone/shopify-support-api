@@ -21,10 +21,10 @@ def get_order_info(order_id=None, customer_name=None):
     url = f"https://{SHOPIFY_STORE}/admin/api/2023-04/orders.json"
 
     params = {}
-    if order_id:
-        params["ids"] = order_id
-    elif customer_name:
-        params["name"] = customer_name
+if order_id:
+    params["name"] = f"#{order_id}"  # Sucht nach der Bestellnummer (nicht der internen ID)
+elif customer_name:
+    params["customer"] = customer_name
 
     response = requests.get(url, headers=HEADERS, params=params)
 
