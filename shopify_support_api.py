@@ -22,7 +22,7 @@ def get_order_info(order_id=None, customer_name=None):
 
     params = {}
     if order_id:
-        params["name"] = f"#{order_id}"  # Search by order number (not internal ID)
+        params["name"] = f"#{order_id}"  # Search by visible order number instead of internal ID
     elif customer_name:
         params["customer"] = customer_name
 
