@@ -20,17 +20,20 @@ def get_order_info(order_id=None, customer_name=None):
     """
     url = f"https://{SHOPIFY_STORE}/admin/api/2023-04/orders.json"
 
-    params = {}
     if order_id:
-        params["name"] = f"#{order_id}"  # Search by visible order number instead of internal ID
-    elif customer_name:
-        params["customer"] = customer_name
+        url = f"https://{SHOPIFY_STORE}/admin/api/2023-04/orders/{order_id}.json"  # Lookup by Order ID
 
-    response = requests.get(url, headers=HEADERS, params=params)
+    headers = {
+        "X-Shopify-Access-Token": SHOPIFY_ACCESS_TOKEN
+    }
+
+    response = requests.get(url, headers=headers)
 
     if response.status_code == 200:
-        orders = response.json().get("orders", [])
-        if not orders:
+        data = response.json()
+        orders = data.get("orders", []) if "orders" in data else [data.get("order", {})]
+        
+        if not orders or orders == [{}]:
             return {"error": "No order found."}
         
         order_data = orders[0]
@@ -43,7 +46,7 @@ def get_order_info(order_id=None, customer_name=None):
         return order_data
     
     else:
-        return {"error": f"Error retrieving order: {response.status_code}"}
+        return {"error": f"Error retrieving order: {response.status_code}", "response": response.text}
 
 def extract_tracking_number(order):
     """
