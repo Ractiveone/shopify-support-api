@@ -27,8 +27,9 @@ def get_order_info(order_id=None, customer_name=None):
     """
     url = f"https://{SHOPIFY_STORE}/admin/api/2023-04/graphql.json"
 
-    query {
-  orders(first: 5) {
+   graphql_query = """
+query ($query: String) {
+  orders(first: 5, query: $query) {
     edges {
       node {
         id
@@ -57,6 +58,7 @@ def get_order_info(order_id=None, customer_name=None):
     }
   }
 }
+"""
 
     # Falls keine Order-ID oder kein Kundenname übergeben wurde → Alle Bestellungen abrufen
     query_value = None
