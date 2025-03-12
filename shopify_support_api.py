@@ -18,35 +18,48 @@ def get_order_info(order_id=None, customer_name=None):
     """
     Retrieves order details from Shopify based on Order ID or Customer Name.
     """
+    # Base URL for orders
     url = f"https://{SHOPIFY_STORE}/admin/api/2023-04/orders.json"
-
-    if order_id:
-        url = f"https://{SHOPIFY_STORE}/admin/api/2023-04/orders/{order_id}.json"  # Lookup by Order ID
-
     headers = {
         "X-Shopify-Access-Token": SHOPIFY_ACCESS_TOKEN
     }
 
-    response = requests.get(url, headers=headers)
+    params = {}
+    if order_id:
+        params["name"] = f"#{order_id}"  # Search by visible order number
+    elif customer_name:
+        params["customer"] = customer_name
+
+    # First request: Get the correct internal Order ID
+    response = requests.get(url, headers=headers, params=params)
 
     if response.status_code == 200:
-        data = response.json()
-        orders = data.get("orders", []) if "orders" in data else [data.get("order", {})]
-        
-        if not orders or orders == [{}]:
+        orders = response.json().get("orders", [])
+        if not orders:
             return {"error": "No order found."}
         
-        order_data = orders[0]
-        tracking_number = extract_tracking_number(order_data)
+        # Get the correct internal order ID
+        correct_order_id = orders[0]["id"]
         
-        # Retrieve tracking info if tracking number exists
-        tracking_info = get_tracking_info(tracking_number) if tracking_number else "No tracking number available."
+        # Fetch full order details using internal ID
+        url = f"https://{SHOPIFY_STORE}/admin/api/2023-04/orders/{correct_order_id}.json"
+        response = requests.get(url, headers=headers)
         
-        order_data["tracking_info"] = tracking_info
-        return order_data
+        if response.status_code == 200:
+            order_data = response.json().get("order", {})
+            tracking_number = extract_tracking_number(order_data)
+            
+            # Retrieve tracking info if tracking number exists
+            tracking_info = get_tracking_info(tracking_number) if tracking_number else "No tracking number available."
+            
+            order_data["tracking_info"] = tracking_info
+            return order_data
+        else:
+            return {"error": f"Error retrieving order details: {response.status_code}", "response": response.text}
     
     else:
         return {"error": f"Error retrieving order: {response.status_code}", "response": response.text}
+
 
 def extract_tracking_number(order):
     """
