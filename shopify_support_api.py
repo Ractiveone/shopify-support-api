@@ -16,50 +16,95 @@ HEADERS = {
 
 def get_order_info(order_id=None, customer_name=None):
     """
-    Retrieves order details from Shopify based on Order ID or Customer Name.
+    Retrieves order details from Shopify using GraphQL based on Order ID or Customer Name.
     """
-    # Base URL for orders
-    url = f"https://{SHOPIFY_STORE}/admin/api/2023-04/orders.json"
+    url = f"https://{SHOPIFY_STORE}/admin/api/2023-04/graphql.json"
+
     headers = {
-        "X-Shopify-Access-Token": SHOPIFY_ACCESS_TOKEN
+        "X-Shopify-Access-Token": SHOPIFY_ACCESS_TOKEN,
+        "Content-Type": "application/json"
     }
 
-    params = {}
-    if order_id:
-        params["name"] = f"#{order_id}"  # Search by visible order number
-    elif customer_name:
-        params["customer"] = customer_name
+    # Define GraphQL query
+    graphql_query = """
+    query ($query: String!) {
+      orders(first: 5, query: $query) {
+        edges {
+          node {
+            id
+            name
+            customer {
+              firstName
+              lastName
+              email
+            }
+            fulfillments {
+              trackingInfo {
+                number
+                url
+              }
+            }
+            totalPriceSet {
+              presentmentMoney {
+                amount
+                currencyCode
+              }
+            }
+            createdAt
+            financialStatus
+            fulfillmentStatus
+          }
+        }
+      }
+    }
+    """
 
-    # First request: Get the correct internal Order ID
-    response = requests.get(url, headers=headers, params=params)
+    # Build GraphQL variables
+    if order_id:
+        query_value = f"name:#{order_id}"  # Search using visible order number
+    elif customer_name:
+        query_value = f"customer:{customer_name}"  # Search by customer name
+    else:
+        return {"error": "No valid search parameter provided."}
+
+    payload = {
+        "query": graphql_query,
+        "variables": {"query": query_value}
+    }
+
+    # Send request to Shopify GraphQL API
+    response = requests.post(url, headers=headers, json=payload)
 
     if response.status_code == 200:
-        orders = response.json().get("orders", [])
+        data = response.json()
+        orders = data.get("data", {}).get("orders", {}).get("edges", [])
+
         if not orders:
             return {"error": "No order found."}
-        
-        # Get the correct internal order ID
-        correct_order_id = orders[0]["id"]
-        
-        # Fetch full order details using internal ID
-        url = f"https://{SHOPIFY_STORE}/admin/api/2023-04/orders/{correct_order_id}.json"
-        response = requests.get(url, headers=headers)
-        
-        if response.status_code == 200:
-            order_data = response.json().get("order", {})
-            tracking_number = extract_tracking_number(order_data)
-            
-            # Retrieve tracking info if tracking number exists
-            tracking_info = get_tracking_info(tracking_number) if tracking_number else "No tracking number available."
-            
-            order_data["tracking_info"] = tracking_info
-            return order_data
-        else:
-            return {"error": f"Error retrieving order details: {response.status_code}", "response": response.text}
-    
-    else:
-        return {"error": f"Error retrieving order: {response.status_code}", "response": response.text}
 
+        # Extract first order
+        order_data = orders[0]["node"]
+
+        # Extract tracking info if available
+        tracking_info = "No tracking available"
+        if order_data.get("fulfillments"):
+            tracking = order_data["fulfillments"][0].get("trackingInfo", [{}])
+            if tracking and tracking[0].get("number"):
+                tracking_info = f"Tracking Number: {tracking[0]['number']} - [Track Order]({tracking[0]['url']})"
+
+        # Build response
+        return {
+            "order_id": order_data["name"],
+            "customer": f"{order_data['customer']['firstName']} {order_data['customer']['lastName']}" if order_data["customer"] else "Unknown",
+            "email": order_data["customer"]["email"] if order_data["customer"] else "No email",
+            "total_price": f"{order_data['totalPriceSet']['presentmentMoney']['amount']} {order_data['totalPriceSet']['presentmentMoney']['currencyCode']}",
+            "status": f"Financial: {order_data['financialStatus']}, Fulfillment: {order_data['fulfillmentStatus']}",
+            "tracking_info": tracking_info,
+            "created_at": order_data["createdAt"]
+        }
+
+    else:
+        return {"error": f"GraphQL request failed: {response.status_code}", "details": response.text}
 
 def extract_tracking_number(order):
     """
