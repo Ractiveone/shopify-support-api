@@ -27,38 +27,36 @@ def get_order_info(order_id=None, customer_name=None):
     """
     url = f"https://{SHOPIFY_STORE}/admin/api/2023-04/graphql.json"
 
-    graphql_query = """
-    query ($query: String) {
-      orders(first: 5, query: $query) {
-        edges {
-          node {
-            id
-            name
-            createdAt
-            financialStatus
-            fulfillmentStatus
-            totalPriceSet {
-              presentmentMoney {
-                amount
-                currencyCode
-              }
-            }
-            customer {
-              firstName
-              lastName
-              email
-            }
-            fulfillments {
-              trackingInfo {
-                number
-                url
-              }
-            }
+    query {
+  orders(first: 5) {
+    edges {
+      node {
+        id
+        name
+        createdAt
+        displayFinancialStatus  # ERSETZT financialStatus
+        displayFulfillmentStatus  # ERSETZT fulfillmentStatus
+        totalPriceSet {
+          presentmentMoney {
+            amount
+            currencyCode
+          }
+        }
+        customer {
+          firstName
+          lastName
+          email
+        }
+        fulfillments {
+          trackingInfo {
+            number
+            url
           }
         }
       }
     }
-    """
+  }
+}
 
     # Falls keine Order-ID oder kein Kundenname übergeben wurde → Alle Bestellungen abrufen
     query_value = None
